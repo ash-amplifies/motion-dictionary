@@ -1,65 +1,89 @@
-import Image from "next/image";
+'use client'
+
+import { useState, useMemo } from 'react'
+import { AnimatePresence } from 'motion/react'
+import Sidebar from '@/components/Sidebar'
+import MotionCard from '@/components/MotionCard'
+import LibraryCard from '@/components/LibraryCard'
+import { motions } from '@/data/motions'
+import { libraries } from '@/data/libraries'
+
+const LIBRARIES_TAB = '⚙️ Motion Libraries & Tools'
 
 export default function Home() {
+  const [activeCategory, setActiveCategory] = useState('All')
+  const [search, setSearch] = useState('')
+
+  const filtered = useMemo(() => {
+    let list = motions
+    if (activeCategory !== 'All' && activeCategory !== LIBRARIES_TAB) {
+      list = list.filter(m => m.category === activeCategory)
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      list = list.filter(m => m.name.toLowerCase().includes(q) || m.badge.toLowerCase().includes(q))
+    }
+    return list
+  }, [activeCategory, search])
+
+  const showLibraries = activeCategory === LIBRARIES_TAB
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+    <div className="flex h-screen bg-background text-foreground overflow-hidden">
+      <Sidebar
+        activeCategory={activeCategory}
+        onCategoryChange={setActiveCategory}
+        totalCount={motions.length}
+        filteredCount={filtered.length}
+        search={search}
+        onSearchChange={setSearch}
+      />
+
+      <main className="flex-1 overflow-y-auto">
+        <div className="p-6 md:p-8">
+          {/* Header */}
+          <div className="mb-8 md:ml-0 ml-12">
+            <h1 className="text-2xl font-bold text-foreground">
+              {showLibraries
+                ? 'Motion Libraries & Tools'
+                : activeCategory === 'All'
+                ? 'All Animations'
+                : activeCategory}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {showLibraries
+                ? 'The best tools for building UI animations'
+                : `${filtered.length} animation${filtered.length !== 1 ? 's' : ''} — hover any card to replay`}
+            </p>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {showLibraries ? (
+              <div key="libraries" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                {libraries.map((lib, i) => (
+                  <LibraryCard key={lib.name} library={lib} index={i} />
+                ))}
+              </div>
+            ) : (
+              <div
+                key={activeCategory + search}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+              >
+                <AnimatePresence>
+                  {filtered.map((item, i) => (
+                    <MotionCard key={item.id} motion={item} index={i} />
+                  ))}
+                </AnimatePresence>
+                {filtered.length === 0 && (
+                  <div className="col-span-full py-24 text-center text-muted-foreground">
+                    No animations match &quot;{search}&quot;
+                  </div>
+                )}
+              </div>
+            )}
+          </AnimatePresence>
         </div>
       </main>
     </div>
-  );
+  )
 }
